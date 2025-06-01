@@ -81,8 +81,8 @@ class VoertuigController extends Controller
         
         // Get the current instructeur assignment for this vehicle
         $voertuigInstructeur = VoertuigInstructeur::where('VoertuigId', $id)
-                                ->where('IsActief', true)
-                                ->first();
+                            ->where('IsActief', true)
+                            ->first();
         
         $currentInstructeurId = $voertuigInstructeur ? $voertuigInstructeur->InstructeurId : null;
         
@@ -97,44 +97,69 @@ class VoertuigController extends Controller
             $currentInstructeurId = $originalInstructeurId;
         }
         
+        // Define types that have readonly fields
+        $readonlyTypes = ['DAF', 'M.A.N', 'Scania'];
+        
         return view('voertuigen.edit', compact(
             'voertuig', 
             'typeVoertuigen', 
             'instructeurs', 
             'currentInstructeurId', 
             'originalInstructeurId',
-            'isNewAssignment'
+            'isNewAssignment',
+            'readonlyTypes'
         ));
     }
 
     public function update(Request $request, $id)
     {
-        $request->validate([
+        $voertuig = Voertuig::findOrFail($id);
+        
+        // Define types that have readonly fields
+        $readonlyTypes = ['DAF', 'M.A.N', 'Scania'];
+        
+        // Validate the request
+        $rules = [
             'Kenteken' => 'required|string|max:20',
             'Type' => 'required|string|max:100',
-            'Bouwjaar' => 'required|date',
             'Brandstof' => 'required|string|max:20',
             'TypeVoertuigId' => 'required|exists:type_voertuig,id',
             'InstructeurId' => 'required|exists:instructeur,id',
             'OriginalInstructeurId' => 'required|exists:instructeur,id',
-        ]);
+        ];
+        
+        // Only validate Bouwjaar if it's not a readonly type
+        if (!in_array($voertuig->Type, $readonlyTypes)) {
+            $rules['Bouwjaar'] = 'required|date';
+        }
+        
+        $request->validate($rules);
 
-        // Update vehicle data
-        $voertuig = Voertuig::findOrFail($id);
-        $voertuig->update([
+        // Prepare data for update
+        $updateData = [
             'Kenteken' => $request->Kenteken,
             'Type' => $request->Type,
-            'Bouwjaar' => $request->Bouwjaar,
             'Brandstof' => $request->Brandstof,
             'TypeVoertuigId' => $request->TypeVoertuigId,
             'DatumGewijzigd' => Carbon::now(),
-        ]);
+        ];
+        
+        // Only update Bouwjaar if it's not a readonly type
+        if (!in_array($voertuig->Type, $readonlyTypes)) {
+            $updateData['Bouwjaar'] = $request->Bouwjaar;
+        } else {
+            // For readonly types, ensure we're using the original value
+            $updateData['Bouwjaar'] = $voertuig->getOriginal('Bouwjaar');
+        }
+        
+        // Update vehicle data
+        $voertuig->update($updateData);
 
         // Get instructor IDs
         $originalInstructeurId = $request->input('OriginalInstructeurId');
         $newInstructeurId = $request->input('InstructeurId');
 
-        // Handle instructor assignment
+        // Handle instructor assignment - same as before
         $currentAssignment = VoertuigInstructeur::where('VoertuigId', $id)
                           ->where('IsActief', true)
                           ->first();

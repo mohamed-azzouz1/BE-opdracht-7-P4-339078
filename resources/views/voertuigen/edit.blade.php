@@ -47,7 +47,20 @@
                         <div class="form-group row mb-3">
                             <label for="Bouwjaar" class="col-md-4 col-form-label text-md-right">Bouwjaar</label>
                             <div class="col-md-6">
-                                <input id="Bouwjaar" type="date" class="form-control @error('Bouwjaar') is-invalid @enderror" name="Bouwjaar" value="{{ old('Bouwjaar', $voertuig->Bouwjaar) }}" required>
+                                @if(in_array($voertuig->Type, $readonlyTypes))
+                                    <input id="Bouwjaar" type="date" 
+                                        class="form-control" 
+                                        value="{{ old('Bouwjaar', $voertuig->Bouwjaar) }}" 
+                                        readonly disabled>
+                                    <input type="hidden" name="Bouwjaar" value="{{ $voertuig->Bouwjaar }}">
+                                    <small class="form-text text-muted">Dit veld kan niet worden gewijzigd voor dit type voertuig.</small>
+                                @else
+                                    <input id="Bouwjaar" type="date" 
+                                        class="form-control @error('Bouwjaar') is-invalid @enderror" 
+                                        name="Bouwjaar" 
+                                        value="{{ old('Bouwjaar', $voertuig->Bouwjaar) }}" 
+                                        required>
+                                @endif
                                 @error('Bouwjaar')
                                     <span class="invalid-feedback" role="alert">
                                         <strong>{{ $message }}</strong>
