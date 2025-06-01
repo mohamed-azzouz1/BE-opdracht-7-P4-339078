@@ -21,5 +21,6 @@ Route::get('/instructeurs/{id}', [InstructeurController::class, 'show'])->name('
 // Voertuig routes
 Route::get('/voertuigen', [VoertuigController::class, 'index'])->name('voertuigen.index');
 Route::get('/instructeurs/{id}/voertuigen', [VoertuigController::class, 'getVoertuigenByInstructeur'])->name('instructeur.voertuigen');
+Route::get('/instructeurs/{id}/available-voertuigen', [VoertuigController::class, 'getAllAvailableVoertuigen'])->name('voertuigen.available');
 Route::get('/voertuigen/{id}/edit', [VoertuigController::class, 'edit'])->name('voertuigen.edit');
 Route::put('/voertuigen/{id}', [VoertuigController::class, 'update'])->name('voertuigen.update');

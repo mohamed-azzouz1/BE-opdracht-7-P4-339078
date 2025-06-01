@@ -5,7 +5,13 @@
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card">
-                <div class="card-header">Wijzigen voertuiggegevens</div>
+                <div class="card-header">
+                    @if($isNewAssignment)
+                    Nieuw voertuig toewijzen
+                    @else
+                    Wijzigen voertuiggegevens
+                    @endif
+                </div>
                 <div class="card-body">
                     <form method="POST" action="{{ route('voertuigen.update', $voertuig->id) }}">
                         @csrf

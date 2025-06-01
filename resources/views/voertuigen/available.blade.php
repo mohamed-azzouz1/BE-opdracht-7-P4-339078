@@ -6,7 +6,7 @@
         <div class="col-md-10">
             <div class="card">
                 <div class="card-header">
-                    Door instructeur gebruikte voertuigen - {{ $instructeur->Voornaam }} {{ $instructeur->Tussenvoegsel }} {{ $instructeur->Achternaam }}
+                    Alle beschikbare voertuigen
                 </div>
                 <div class="card-body">
                     @if (session('success'))
@@ -28,7 +28,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach ($voertuigen as $voertuig)
+                            @foreach ($availableVoertuigen as $voertuig)
                             <tr>
                                 <td>{{ $voertuig->TypeVoertuig }}</td>
                                 <td>{{ $voertuig->Type }}</td>
@@ -37,7 +37,7 @@
                                 <td>{{ $voertuig->Brandstof }}</td>
                                 <td>{{ $voertuig->Rijbewijscategorie }}</td>
                                 <td>
-                                    <a href="{{ route('voertuigen.edit', $voertuig->id) }}" class="btn btn-sm btn-primary">Wijzigen</a>
+                                    <a href="{{ route('voertuigen.edit', ['id' => $voertuig->id, 'instructeur_id' => $instructeur->id, 'new_assignment' => true]) }}" class="btn btn-sm btn-primary">Wijzigen</a>
                                 </td>
                             </tr>
                             @endforeach
@@ -45,8 +45,7 @@
                     </table>
                     
                     <div class="mt-3">
-                        <a href="{{ route('instructeurs.index') }}" class="btn btn-secondary">Terug naar instructeurs</a>
-                        <a href="{{ route('voertuigen.available', $instructeur->id) }}" class="btn btn-primary">Toevoegen Voertuig</a>
+                        <a href="{{ route('instructeur.voertuigen', $instructeur->id) }}" class="btn btn-secondary">Terug naar voertuigen van {{ $instructeur->Voornaam }}</a>
                     </div>
                 </div>
             </div>

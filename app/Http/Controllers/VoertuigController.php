@@ -29,7 +29,7 @@ class VoertuigController extends Controller
             ->join('type_voertuig', 'voertuig.TypeVoertuigId', '=', 'type_voertuig.id')
             ->where('voertuig_instructeur.InstructeurId', '=', $instructeurId)
             ->where('voertuig.IsActief', '=', true)
-            ->where('voertuig_instructeur.IsActief', '=', true) // Added this line to ensure only active assignments are shown
+            ->where('voertuig_instructeur.IsActief', '=', true)
             ->select(
                 'voertuig.id',
                 'voertuig.Kenteken',
@@ -45,7 +45,35 @@ class VoertuigController extends Controller
         return view('voertuigen.instructeur_voertuigen', compact('instructeur', 'voertuigen'));
     }
 
-    public function edit($id)
+    public function getAllAvailableVoertuigen($instructeurId)
+    {
+        $instructeur = Instructeur::findOrFail($instructeurId);
+        
+        // Get all vehicles that are not actively assigned to any instructor
+        $availableVoertuigen = DB::table('voertuig')
+            ->leftJoin('voertuig_instructeur', function($join) {
+                $join->on('voertuig.id', '=', 'voertuig_instructeur.VoertuigId')
+                     ->where('voertuig_instructeur.IsActief', '=', true);
+            })
+            ->join('type_voertuig', 'voertuig.TypeVoertuigId', '=', 'type_voertuig.id')
+            ->whereNull('voertuig_instructeur.id') // No active assignment
+            ->where('voertuig.IsActief', '=', true)
+            ->select(
+                'voertuig.id',
+                'voertuig.Kenteken',
+                'voertuig.Type',
+                'voertuig.Bouwjaar',
+                'voertuig.Brandstof',
+                'type_voertuig.TypeVoertuig',
+                'type_voertuig.Rijbewijscategorie'
+            )
+            ->orderBy('type_voertuig.Rijbewijscategorie')
+            ->get();
+        
+        return view('voertuigen.available', compact('instructeur', 'availableVoertuigen'));
+    }
+
+    public function edit($id, Request $request)
     {
         $voertuig = Voertuig::findOrFail($id);
         $typeVoertuigen = TypeVoertuig::all();
@@ -57,14 +85,25 @@ class VoertuigController extends Controller
                                 ->first();
         
         $currentInstructeurId = $voertuigInstructeur ? $voertuigInstructeur->InstructeurId : null;
-        $originalInstructeurId = $currentInstructeurId; // Store for redirect after update
+        
+        // Get the instructor ID from the request or default to current
+        $originalInstructeurId = $request->query('instructeur_id', $currentInstructeurId);
+        
+        // Flag to determine if this is a new assignment
+        $isNewAssignment = $request->query('new_assignment', false) || is_null($currentInstructeurId);
+        
+        // If it's a new assignment and we have a specified instructor, pre-select them
+        if ($isNewAssignment && $originalInstructeurId) {
+            $currentInstructeurId = $originalInstructeurId;
+        }
         
         return view('voertuigen.edit', compact(
             'voertuig', 
             'typeVoertuigen', 
             'instructeurs', 
             'currentInstructeurId', 
-            'originalInstructeurId'
+            'originalInstructeurId',
+            'isNewAssignment'
         ));
     }
 
@@ -77,6 +116,7 @@ class VoertuigController extends Controller
             'Brandstof' => 'required|string|max:20',
             'TypeVoertuigId' => 'required|exists:type_voertuig,id',
             'InstructeurId' => 'required|exists:instructeur,id',
+            'OriginalInstructeurId' => 'required|exists:instructeur,id',
         ]);
 
         // Update vehicle data
@@ -90,11 +130,11 @@ class VoertuigController extends Controller
             'DatumGewijzigd' => Carbon::now(),
         ]);
 
-        // Get the original instructor ID for redirect
+        // Get instructor IDs
         $originalInstructeurId = $request->input('OriginalInstructeurId');
         $newInstructeurId = $request->input('InstructeurId');
 
-        // Handle instructor reassignment
+        // Handle instructor assignment
         $currentAssignment = VoertuigInstructeur::where('VoertuigId', $id)
                           ->where('IsActief', true)
                           ->first();
@@ -121,11 +161,13 @@ class VoertuigController extends Controller
         }
         // If there's no current assignment, create one
         elseif (!$currentAssignment) {
+            // Create new assignment
             VoertuigInstructeur::create([
                 'VoertuigId' => $id,
                 'InstructeurId' => $newInstructeurId,
                 'DatumToekenning' => Carbon::now()->format('Y-m-d'),
                 'IsActief' => true,
+                'Opmerking' => 'New assignment',
                 'DatumAangemaakt' => Carbon::now(),
                 'DatumGewijzigd' => Carbon::now(),
             ]);
