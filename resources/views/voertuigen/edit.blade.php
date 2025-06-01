@@ -10,6 +10,9 @@
                     <form method="POST" action="{{ route('voertuigen.update', $voertuig->id) }}">
                         @csrf
                         @method('PUT')
+                        
+                        <!-- Hidden field to store original instructor ID for redirect -->
+                        <input type="hidden" name="OriginalInstructeurId" value="{{ $originalInstructeurId }}">
 
                         <div class="form-group row mb-3">
                             <label for="Kenteken" class="col-md-4 col-form-label text-md-right">Kenteken</label>
@@ -81,12 +84,30 @@
                             </div>
                         </div>
 
+                        <div class="form-group row mb-3">
+                            <label for="InstructeurId" class="col-md-4 col-form-label text-md-right">Instructeur</label>
+                            <div class="col-md-6">
+                                <select id="InstructeurId" class="form-control @error('InstructeurId') is-invalid @enderror" name="InstructeurId" required>
+                                    @foreach($instructeurs as $instructeur)
+                                        <option value="{{ $instructeur->id }}" {{ (old('InstructeurId', $currentInstructeurId) == $instructeur->id) ? 'selected' : '' }}>
+                                            {{ $instructeur->Voornaam }} {{ $instructeur->Tussenvoegsel ? $instructeur->Tussenvoegsel . ' ' : '' }}{{ $instructeur->Achternaam }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('InstructeurId')
+                                    <span class="invalid-feedback" role="alert">
+                                        <strong>{{ $message }}</strong>
+                                    </span>
+                                @enderror
+                            </div>
+                        </div>
+
                         <div class="form-group row mb-0">
                             <div class="col-md-6 offset-md-4">
                                 <button type="submit" class="btn btn-primary">
                                     Wijzig
                                 </button>
-                                <a href="{{ route('instructeur.voertuigen', $instructeurId) }}" class="btn btn-secondary">
+                                <a href="{{ route('instructeur.voertuigen', $originalInstructeurId) }}" class="btn btn-secondary">
                                     Annuleren
                                 </a>
                             </div>
